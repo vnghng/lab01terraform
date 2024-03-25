@@ -1,0 +1,6 @@
+project             = "lab-01-nghianv"
+env                 = "test"
+account_id          = "381491918721"
+region              = "ap-southeast-1"
+solution_stack_name = "64bit Amazon Linux 2 v5.8.11 running Node.js 16"
+tier                = "WebServer"
