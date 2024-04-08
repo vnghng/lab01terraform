@@ -1,41 +1,68 @@
-###
-# GROWTH ALB PUBLIC
-###
-resource "aws_lb" "this" {
-  name               = "${var.project}-public-alb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.public_alb.id]
+module "alb" {
+  source = "terraform-aws-modules/alb/aws"
 
+  name    = "${var.project}-public-alb"
+  vpc_id  = module.vpc.vpc_id
   subnets = module.vpc.public_subnets
-}
 
-# TARGET GROUP
-resource "aws_lb_target_group" "this" {
-  name        = "${var.env}-public-tg"
-  port        = 80
-  protocol    = "HTTP"
-  target_type = "ip"
-  vpc_id      = module.vpc.vpc_id
-
-  health_check {
-    path    = "/"
-    matcher = "200"
+  # Security Group
+  security_group_ingress_rules = {
+    all_http = {
+      from_port   = 80
+      to_port     = 80
+      ip_protocol = "tcp"
+      description = "HTTP web traffic"
+      cidr_ipv4   = "0.0.0.0/0"
+    }
+    all_https = {
+      from_port   = 443
+      to_port     = 443
+      ip_protocol = "tcp"
+      description = "HTTPS web traffic"
+      cidr_ipv4   = "0.0.0.0/0"
+    }
   }
+  security_group_egress_rules = {
+    all = {
+      ip_protocol = "-1"
+      cidr_ipv4   = "10.0.0.0/16"
+    }
+  }
+
+
+
+  listeners = {
+    ex-http-https-redirect = {
+      port     = 80
+      protocol = "HTTP"
+      redirect = {
+        port        = "443"
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
+    }
+    ex-https = {
+      port            = 443
+      protocol        = "HTTPS"
+      certificate_arn = "${local.certarn}"
+
+      forward = {
+        target_group_key = "ex-instance"
+      }
+    }
+  }
+
+  target_groups = {
+    ex-instance = {
+      name_prefix      = "h1"
+      protocol         = "HTTP"
+      port             = 80
+      target_type      = "instance"
+    }
+  }
+
   tags = {
-    Name = "${var.env}-public-tg"
+    Environment = "Development"
+    Project     = "Example"
   }
 }
-
-# LISTENER
-resource "aws_lb_listener" "public_listener_http" {
-  load_balancer_arn = aws_lb.this.arn
-  port              = "80"
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = "arn:aws:elasticloadbalancing:ap-southeast-1:381491918721:targetgroup/awseb-test-lab-default-xqx2c/d559411cb0f763bd"
-  }
-}
-

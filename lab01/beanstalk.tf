@@ -56,7 +56,7 @@ resource "aws_elastic_beanstalk_environment" "beanstalkappenv" {
   setting {
       namespace = "aws:elbv2:loadbalancer"
       name      = "SharedLoadBalancer"
-      value     = aws_lb.this.arn
+      value     = module.alb.arn
   }
   setting {
     namespace = "aws:autoscaling:asg"

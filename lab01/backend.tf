@@ -8,7 +8,7 @@ terraform {
     }
   }
   backend "s3" {
-    bucket         = "nghianv.381491918721-iac"
+    bucket         = "nghianv2test"
     key            = "terraform.nghianv2.test.lz.tfstate"
     region         = "ap-southeast-1"
     encrypt        = true

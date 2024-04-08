@@ -3,34 +3,19 @@ resource "aws_key_pair" "deployer" {
   public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHZxYXCW0H4a36qUBSMUiDFy4UF7unv8X4uQRRn1+8zN f88\nghianv2@LHN-63-01-131"
 }
 
-resource "aws_instance" "this" {
-  ami                    = local.ami_id
-  instance_type          = local.ec2_instance_type
-  availability_zone      = local.az
-  subnet_id              = module.vpc.public_subnets [0]
-  vpc_security_group_ids = [
-    aws_security_group.elastic_beanstalk.id
-  ]
-  key_name             = "nghianv2"
-  monitoring           = true
+module "ec2_instance" {
+  source  = "terraform-aws-modules/ec2-instance/aws"
 
-  root_block_device {
-    delete_on_termination = true
-    iops                  = local.ebs_iops
-    volume_size           = local.ebs_volume_size
-    volume_type           = local.ebs_volume_type
-  }
+  name = "single-instance"
+
+  instance_type          = "t2.micro"
+  key_name               = aws_key_pair.deployer.key_name
+  monitoring             = true
+  vpc_security_group_ids = module.elastic-beanstalk_service_sg.security_group_id
+  subnet_id              = "module.vpc.public_subnets"
 
   tags = {
-    Name        = "${var.env}-${var.project}"
-    Environment = var.env
-    Project     = var.project
-    Managed     = "Terraform"
-  }
-
-  lifecycle {
-    ignore_changes = [
-      tags
-    ]
+    Terraform   = "true"
+    Environment = "dev"
   }
 }
